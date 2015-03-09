@@ -104,10 +104,10 @@ def initializeDatabase():
 
     if not commentsPresent:
         # create comments table
-        c.execute('Create TABLE comments (date, user, body, submissionID)')
+        c.execute('Create TABLE comments (date, user, body, comScore, submissionID)')
 
         # create submissions table
-        c.execute('Create TABLE submissions (submissionID, submissionTitle, subredditName, subredditID)')
+        c.execute('Create TABLE submissions (submissionID, submissionTitle, postScore, subredditName, subredditID)')
 
     return c
 
@@ -125,9 +125,10 @@ def saveCommentData(c, comment):
     userName = comment.author.name
     body = comment.body
     submissionID = comment._submission.name
+    score = comment.score
 
     # save data
-    c.execute('Insert into comments VALUES (?, ?, ?, ?)', [commentDateStr, userName, body, submissionID])
+    c.execute('Insert into comments VALUES (?, ?, ?, ?, ?)', [commentDateStr, userName, body, score, submissionID])
     c.connection.commit()
 
 
@@ -143,9 +144,10 @@ def saveSubmission(c, post):
     submissionTitle = post.title
     subredditID = post.subreddit.name
     subredditName = post.subreddit.title
+    score = post.score
 
     # save data
-    c.execute('Insert into submissions VALUES (?, ?, ?, ?)', [submissionID, submissionTitle, subredditName, subredditID])
+    c.execute('Insert into submissions VALUES (?, ?, ?, ?, ?)', [submissionID, submissionTitle, score, subredditName, subredditID])
     c.connection.commit()
 
 
