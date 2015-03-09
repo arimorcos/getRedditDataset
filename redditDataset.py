@@ -1,12 +1,14 @@
 __author__ = 'Ari Morcos'
 
+from requests import HTTPError
 import praw
 import sqlite3
 import os
 import datetime
+import time
 
 
-def createDataset(r, subreddits, dateRange='month', nCommentsPerSubmission=100):
+def createDataset(r, subreddits, dateRange='month', nCommentsPerSubmission=100, dbName='reddit'):
     """
     :param r: reddit object
     :param subreddits: list of subreddits to grab
@@ -16,7 +18,7 @@ def createDataset(r, subreddits, dateRange='month', nCommentsPerSubmission=100):
     """
 
     # initialize database
-    c = initializeDatabase()
+    c = initializeDatabase(dbName=dbName)
 
     # loop through each subreddit
     for sub in subreddits:
@@ -37,9 +39,10 @@ def createDataset(r, subreddits, dateRange='month', nCommentsPerSubmission=100):
             # get comments
             comments = getCommentsFromSubmission(post, nCommentsPerSubmission)
 
-            # save comment data
+            # save comment data for comments which have not been deleted
             # print [com.author.name for com in comments if isinstance(com, praw.objects.Comment)]
-            [saveCommentData(c, com) for com in comments if isinstance(com, praw.objects.Comment)]
+            [saveCommentData(c, com) for com in comments if isinstance(com, praw.objects.Comment)
+             and com.author is not None]
 
 
 def getSubreddits(r, subredditNames):
@@ -55,8 +58,12 @@ def getSubreddits(r, subredditNames):
 
 def getRecentSubmissions(subreddit, dateRange):
 
-    # perform an empty search to get all submissions within date range
-    searchResult = subreddit.search('', period=dateRange, limit=None)
+    try:
+        # perform an empty search to get all submissions within date range
+        searchResult = subreddit.search('', period=dateRange, limit=None)
+    except HTTPError:
+        time.sleep(2)
+        getRecentSubmissions(subreddit, dateRange)
 
     # return search result
     return searchResult
@@ -86,13 +93,13 @@ def getDatabasePath(baseName):
     return databasePath
 
 
-def initializeDatabase():
+def initializeDatabase(dbName='reddit'):
     """
     Initializes a database connection called 'reddit.db'
     :return: cursor object
     """
 
-    dbPath = getDatabasePath('reddit')
+    dbPath = getDatabasePath(dbName)
     dbObj = sqlite3.connect(dbPath)
     c = dbObj.cursor()
 
@@ -104,10 +111,10 @@ def initializeDatabase():
 
     if not commentsPresent:
         # create comments table
-        c.execute('Create TABLE comments (date, user, body, comScore, submissionID)')
+        c.execute('Create TABLE comments (date, user, body, comScore, postID)')
 
         # create submissions table
-        c.execute('Create TABLE submissions (submissionID, submissionTitle, postScore, subredditName, subredditID)')
+        c.execute('Create TABLE submissions (postID, postTitle, postBody, postScore, subredditName, subredditID)')
 
     return c
 
@@ -143,11 +150,16 @@ def saveSubmission(c, post):
     submissionID = post.name
     submissionTitle = post.title
     subredditID = post.subreddit.name
-    subredditName = post.subreddit.title
+    subredditName = post.subreddit.display_name
     score = post.score
+    if post.is_self:
+        body = post.selftext
+    else:
+        body = post.url
 
     # save data
-    c.execute('Insert into submissions VALUES (?, ?, ?, ?, ?)', [submissionID, submissionTitle, score, subredditName, subredditID])
+    c.execute('Insert into submissions VALUES (?, ?, ?, ?, ?, ?)', [submissionID, submissionTitle, body, score,
+                                                                    subredditName, subredditID])
     c.connection.commit()
 
 
