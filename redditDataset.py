@@ -6,6 +6,7 @@ import sqlite3
 import os
 import datetime
 import time
+import itertools
 
 
 def createDataset(r, subreddits, dateRange='month', nCommentsPerSubmission=100, dbName='reddit'):
@@ -63,7 +64,7 @@ def getRecentSubmissions(subreddit, dateRange):
         searchResult = subreddit.search('', period=dateRange, limit=None)
     except HTTPError:
         time.sleep(2)
-        getRecentSubmissions(subreddit, dateRange)
+        searchResult = getRecentSubmissions(subreddit, dateRange)
 
     # return search result
     return searchResult
@@ -76,6 +77,79 @@ def getCommentsFromSubmission(submission, nCommentsPerSubmission):
 
     # filter list and return
     return flatComments[:nCommentsPerSubmission]
+
+
+def getAllPostsWithinRangeFineScale(subreddit, startDate, endDate, fineScale=12, nPostsPer=1000):
+    """
+    Grabs posts using fine scale to grab maximum number
+    :param fineScale: scale in hours. Default is 12.
+    :param subreddit: subreddit object
+    :param startDate: start date in format yymmdd
+    :param endDate: end date in format yymmdd
+    :param nPostsPer: number of posts per unit
+    :return:
+    """
+
+    # create datetime object for each date
+    startDateObject = datetime.datetime.strptime(startDate, "%y%m%d")
+    endDateObject = datetime.datetime.strptime(endDate, "%y%m%d")
+
+    # get posts
+    posts = []
+    tempStart = startDateObject
+    while True:
+
+        # get temporary end date
+        tempEnd = tempStart + datetime.timedelta(hours=fineScale)
+
+        # check if tempEnd is after than endDateObject
+        if (tempEnd - endDateObject) > datetime.timedelta(0, 0, 0):
+            # set tempEnd to be endDateObject
+            tempEnd = endDateObject
+
+        # break if start is after end
+        if (tempStart - tempEnd) > datetime.timedelta(0, 0, 0):
+            break
+
+        # convert to strings
+        tempStartStr = tempStart.strftime('%y%m%d%H%M%S')
+        tempEndStr = tempEnd.strftime('%y%m%d%H%M%S')
+
+        # get posts within range
+        tempPosts = getPostsWithinRange(subreddit, tempStartStr, tempEndStr, nPosts=nPostsPer)
+
+        # combine with posts
+        posts = itertools.chain(posts, tempPosts)
+
+        # iterate on start date
+        tempStart = tempEnd + datetime.timedelta(seconds=1)
+
+    # return
+    return posts
+
+
+def getPostsWithinRange(subreddit, startDate, endDate, nPosts=1000):
+    """
+    :param subreddit: subreddit object
+    :param startDate: start date in format yymmddHHMMSS
+    :param endDate: end date in format yymmddHHMMSS
+    :return: generator object of posts
+    """
+    # convert dates to unix time format
+    startDate = time.mktime(datetime.datetime.strptime(startDate, "%y%m%d%H%M%S").timetuple())
+    endDate = time.mktime(datetime.datetime.strptime(endDate, "%y%m%d%H%M%S").timetuple())
+
+    # generate timestamp search term
+    searchTerm = 'timestamp:' + str(startDate)[:-2] + '..' + str(endDate)[:-2]
+
+    # get posts
+    try:
+        posts = subreddit.search(searchTerm, sort='top', syntax='cloudsearch', limit=nPosts)
+    except HTTPError:
+        time.sleep(2)
+        posts = getPostsWithinRange(subreddit, startDate, endDate, nPosts=nPosts)
+
+    return posts
 
 
 def getDatabasePath(baseName):
