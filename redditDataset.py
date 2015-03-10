@@ -201,7 +201,8 @@ def initializeDatabase(dbName='reddit'):
         c.execute('Create TABLE comments (date, user, body, comScore, postID)')
 
         # create submissions table
-        c.execute('Create TABLE submissions (postID, postTitle, postBody, postScore, subredditName, subredditID)')
+        c.execute('Create TABLE submissions (postID, postTitle, postBody, postScore, postDate, subredditName,'
+                  '                          subredditID)')
 
     return c
 
@@ -236,6 +237,8 @@ def saveSubmission(c, post):
     # extract relevant fields
     submissionID = post.name
     submissionTitle = post.title
+    submissionDate = datetime.datetime.fromtimestamp(comment.created_utc)
+    submissionDateStr = submissionDate.strftime('%Y%m%d%H%M%S')
     subredditID = post.subreddit.name
     subredditName = post.subreddit.display_name
     score = post.score
@@ -245,8 +248,8 @@ def saveSubmission(c, post):
         body = post.url
 
     # save data
-    c.execute('Insert into submissions VALUES (?, ?, ?, ?, ?, ?)', [submissionID, submissionTitle, body, score,
-                                                                    subredditName, subredditID])
+    c.execute('Insert into submissions VALUES (?, ?, ?, ?, ?, ?, ?)', [submissionID, submissionTitle, body, score,
+                                                                       submissionDateStr, subredditName, subredditID])
     c.connection.commit()
 
 
