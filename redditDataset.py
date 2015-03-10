@@ -43,7 +43,11 @@ def createDataset(r, subreddits, startDate=(datetime.datetime.now()-datetime.tim
             saveSubmission(c, post)
 
             # get comments
-            comments = getCommentsFromSubmission(post, nCommentsPerSubmission)
+            try:
+                comments = getCommentsFromSubmission(post, nCommentsPerSubmission)
+            except HTTPError:
+                time.sleep(2)
+                comments = getCommentsFromSubmission(post, nCommentsPerSubmission)
 
             # save comment data for comments which have not been deleted
             # print [com.author.name for com in comments if isinstance(com, praw.objects.Comment)]
