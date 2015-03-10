@@ -96,8 +96,8 @@ def getAllPostsWithinRangeFineScale(subreddit, startDate, endDate, fineScale=12,
     """
 
     # create datetime object for each date
-    startDateObject = datetime.datetime.strptime(startDate, "%y%m%d")
-    endDateObject = datetime.datetime.strptime(endDate, "%y%m%d")
+    startDateObject = datetime.datetime.strptime(startDate, "%y%m%d%H%M%S")
+    endDateObject = datetime.datetime.strptime(endDate, "%y%m%d%H%M%S")
 
     # get posts
     posts = []
