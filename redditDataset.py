@@ -9,12 +9,17 @@ import time
 import itertools
 
 
-def createDataset(r, subreddits, dateRange='month', nCommentsPerSubmission=100, dbName='reddit'):
+def createDataset(r, subreddits, startDate=(datetime.datetime.now()-datetime.timedelta(days=7)).strftime('%y%m%d%H%M%S'),
+                  endDate=datetime.datetime.now().strftime('%y%m%d%H%M%S'), nCommentsPerSubmission=100, dbName='reddit',
+                  fineScale=12):
     """
     :param r: reddit object
     :param subreddits: list of subreddits to grab
-    :param dateRange: range of posts to get. Default is one month.
+    :param startDate: start date in format yymmddHHMMSS
+    :param endDate: end date in format yymmddHHMMSS
     :param nCommentsPerSubmission: number of comments to grab per submission. Default is 100.
+    :param dbName: base of database name
+    :param fineScale: scale of database in hours
     :return:
     """
 
@@ -27,10 +32,10 @@ def createDataset(r, subreddits, dateRange='month', nCommentsPerSubmission=100, 
         print 'Processing subreddit: ' + sub.title
 
         # get submissions within the date range
-        recentPosts = getRecentSubmissions(sub, dateRange)
+        matchingPosts = getAllPostsWithinRangeFineScale(sub, startDate=startDate, endDate=endDate, fineScale=fineScale)
 
         # loop through each post and get top comments
-        for post in recentPosts:
+        for post in matchingPosts:
 
             print 'Processing post: ' + post.title
 
