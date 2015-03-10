@@ -11,7 +11,7 @@ import itertools
 
 def createDataset(r, subreddits, startDate=(datetime.datetime.now()-datetime.timedelta(days=7)).strftime('%y%m%d%H%M%S'),
                   endDate=datetime.datetime.now().strftime('%y%m%d%H%M%S'), nCommentsPerSubmission=100, dbName='reddit',
-                  fineScale=12):
+                  fineScale=12, nPostsPerFineScale=200):
     """
     :param r: reddit object
     :param subreddits: list of subreddits to grab
@@ -20,6 +20,7 @@ def createDataset(r, subreddits, startDate=(datetime.datetime.now()-datetime.tim
     :param nCommentsPerSubmission: number of comments to grab per submission. Default is 100.
     :param dbName: base of database name
     :param fineScale: scale of database in hours
+    :param nPostsPerFineScale: number of posts per fine scale
     :return:
     """
 
@@ -32,7 +33,8 @@ def createDataset(r, subreddits, startDate=(datetime.datetime.now()-datetime.tim
         print 'Processing subreddit: ' + sub.title
 
         # get submissions within the date range
-        matchingPosts = getAllPostsWithinRangeFineScale(sub, startDate=startDate, endDate=endDate, fineScale=fineScale)
+        matchingPosts = getAllPostsWithinRangeFineScale(sub, startDate=startDate, endDate=endDate, fineScale=fineScale,
+                                                        nPostsPer=nPostsPerFineScale)
 
         # loop through each post and get top comments
         for post in matchingPosts:
@@ -53,6 +55,8 @@ def createDataset(r, subreddits, startDate=(datetime.datetime.now()-datetime.tim
             # print [com.author.name for com in comments if isinstance(com, praw.objects.Comment)]
             [saveCommentData(c, com) for com in comments if isinstance(com, praw.objects.Comment)
              and com.author is not None]
+
+    print ('\nData collection complete!')
 
 
 def getSubreddits(r, subredditNames):
