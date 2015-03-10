@@ -8,5 +8,4 @@ if __name__ == '__main__':
 
     r = praw.Reddit(user_agent='test')
     sub = getSubreddits(r, ['funny'])
-    sub = sub.next()
-    posts = getAllPostsWithinRangeFineScale(sub, '140101', '140104', fineScale=24)
+    createDataset(r, sub, startDate='140101000000', endDate='140102000000', dbName='test')

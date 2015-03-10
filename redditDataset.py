@@ -214,7 +214,7 @@ def saveCommentData(c, comment):
     """
 
     # extract relevant fields
-    commentDate = datetime.date.fromtimestamp(comment.created_utc)
+    commentDate = datetime.datetime.fromtimestamp(comment.created_utc)
     commentDateStr = commentDate.strftime('%Y%m%d%H%M%S')
     userName = comment.author.name
     body = comment.body
