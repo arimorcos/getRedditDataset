@@ -6,6 +6,7 @@ from redditDB import RedditDB
 import datetime
 import time
 import itertools
+import sys
 
 
 def createDataset(r, subreddits, startDate=(datetime.datetime.now()-datetime.timedelta(days=7)).strftime('%y%m%d%H%M%S'),
@@ -166,8 +167,14 @@ def getPostsWithinRange(subreddit, startDate, endDate, nPosts=1000):
 
 if __name__ == "__main__":
 
+    # handle arguments
+    startDate = sys.argv[1]
+    endDate = sys.argv[2]
+    dbName = sys.argv[3]
+    fineScale = int(sys.argv[4])
 
-    # handle argument
 
     # initialize reddit object
     r = praw.Reddit(user_agent='get_dataset')
+    subreddits = r.get_popular_subreddits(limit=200)
+    createDataset(r, subreddits, startDate=startDate, endDate=endDate, dbName=dbName, fineScale=fineScale)
