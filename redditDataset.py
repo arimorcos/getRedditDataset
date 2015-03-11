@@ -39,7 +39,7 @@ def createDataset(r, subreddits, startDate=(datetime.datetime.now()-datetime.tim
         # loop through each post and get top comments
         for post in matchingPosts:
 
-            print 'Processing post: ' + post.title
+            print 'Processing post: ' + post.title.encode('utf-8')
 
             # save post
             dbObj.saveSubmission(post)
