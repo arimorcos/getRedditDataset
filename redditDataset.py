@@ -2,8 +2,7 @@ __author__ = 'Ari Morcos'
 
 from requests import HTTPError
 import praw
-import sqlite3
-import os
+from redditDB import RedditDB
 import datetime
 import time
 import itertools
@@ -25,7 +24,7 @@ def createDataset(r, subreddits, startDate=(datetime.datetime.now()-datetime.tim
     """
 
     # initialize database
-    c = initializeDatabase(dbName=dbName)
+    dbObj = RedditDB(dbName=dbName)
 
     # loop through each subreddit
     for sub in subreddits:
@@ -42,7 +41,7 @@ def createDataset(r, subreddits, startDate=(datetime.datetime.now()-datetime.tim
             print 'Processing post: ' + post.title
 
             # save post
-            saveSubmission(c, post)
+            dbObj.saveSubmission(post)
 
             # get comments
             try:
@@ -53,7 +52,7 @@ def createDataset(r, subreddits, startDate=(datetime.datetime.now()-datetime.tim
 
             # save comment data for comments which have not been deleted
             # print [com.author.name for com in comments if isinstance(com, praw.objects.Comment)]
-            [saveCommentData(c, com) for com in comments if isinstance(com, praw.objects.Comment)
+            [dbObj.saveCommentData(com) for com in comments if isinstance(com, praw.objects.Comment)
              and com.author is not None]
 
     print ('\nData collection complete!')
@@ -163,94 +162,6 @@ def getPostsWithinRange(subreddit, startDate, endDate, nPosts=1000):
         posts = getPostsWithinRange(subreddit, startDate, endDate, nPosts=nPosts)
 
     return posts
-
-
-def getDatabasePath(baseName):
-    """
-    :param baseName: base name for database
-    :return: full absolute database path
-    """
-    userPath = os.path.expanduser('~')
-    basePath = os.path.abspath(os.path.join(userPath, 'Databases'))
-    databasePath = os.path.abspath(os.path.join(basePath, baseName + '.db'))
-
-    # make directory if it doesn't exist
-    if not os.path.exists(basePath):
-        os.makedirs(basePath)
-    return databasePath
-
-
-def initializeDatabase(dbName='reddit'):
-    """
-    Initializes a database connection called 'reddit.db'
-    :return: cursor object
-    """
-
-    dbPath = getDatabasePath(dbName)
-    dbObj = sqlite3.connect(dbPath)
-    c = dbObj.cursor()
-
-    # get list of tables
-    tableList = c.execute("Select name from sqlite_master where type = 'table' ")
-
-    # check if comments exist in tableList
-    commentsPresent = any(['comments' == item[0] for item in [row for row in list(tableList)]])
-
-    if not commentsPresent:
-        # create comments table
-        c.execute('Create TABLE comments (date, user, body, comScore, postID)')
-
-        # create submissions table
-        c.execute('Create TABLE submissions (postID, postTitle, postBody, postScore, postDate, subredditName,'
-                  '                          subredditID)')
-
-    return c
-
-
-def saveCommentData(c, comment):
-    """
-    :param c: cursor object output by initialize database
-    :param comment: comment object
-    :return: void
-    """
-
-    # extract relevant fields
-    commentDate = datetime.datetime.fromtimestamp(comment.created_utc)
-    commentDateStr = commentDate.strftime('%Y%m%d%H%M%S')
-    userName = comment.author.name
-    body = comment.body
-    submissionID = comment._submission.name
-    score = comment.score
-
-    # save data
-    c.execute('Insert into comments VALUES (?, ?, ?, ?, ?)', [commentDateStr, userName, body, score, submissionID])
-    c.connection.commit()
-
-
-def saveSubmission(c, post):
-    """
-    :param c: cursor object output by initialize database
-    :param post: post object
-    :return: void
-    """
-
-    # extract relevant fields
-    submissionID = post.name
-    submissionTitle = post.title
-    submissionDate = datetime.datetime.fromtimestamp(comment.created_utc)
-    submissionDateStr = submissionDate.strftime('%Y%m%d%H%M%S')
-    subredditID = post.subreddit.name
-    subredditName = post.subreddit.display_name
-    score = post.score
-    if post.is_self:
-        body = post.selftext
-    else:
-        body = post.url
-
-    # save data
-    c.execute('Insert into submissions VALUES (?, ?, ?, ?, ?, ?, ?)', [submissionID, submissionTitle, body, score,
-                                                                       submissionDateStr, subredditName, subredditID])
-    c.connection.commit()
 
 
 if __name__ == "__main__":
