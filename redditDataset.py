@@ -7,6 +7,7 @@ import datetime
 import time
 import itertools
 import sys
+import os
 
 
 def createDataset(r, subreddits, startDate=(datetime.datetime.now()-datetime.timedelta(days=7)).strftime('%y%m%d%H%M%S'),
@@ -26,6 +27,9 @@ def createDataset(r, subreddits, startDate=(datetime.datetime.now()-datetime.tim
 
     # initialize database
     dbObj = RedditDB(dbName=dbName)
+
+    # disable buffering
+    sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)
 
     # loop through each subreddit
     for sub in subreddits:
