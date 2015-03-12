@@ -3,6 +3,9 @@ __author__ = 'Ari Morcos'
 import os
 import datetime
 import sqlite3
+import re
+import shutil
+import time
 
 
 class RedditDB:
@@ -97,3 +100,55 @@ class RedditDB:
                                                                                   score, submissionDateStr,
                                                                                   subredditName, subredditID])
         self.__c.connection.commit()
+
+
+def mergeDBs(path, dbName='mergedDB'):
+    """
+    Merges multiple databases into one large database
+    :param path: path to folder containing databases. Will merge all of these databases
+    :param dbName: Name of the merged database. Default is mergedDB.
+    """
+
+    # get list of database objects in path
+    allFiles = os.listdir(path)
+
+    # get db files
+    dbFiles = [dbFile for dbFile in allFiles if re.match(r'.*\.db', dbFile) is not None]
+
+    # get path of first file and new database object
+    source = os.path.abspath(os.path.join(path, dbFiles[0]))
+    destination = os.path.abspath(os.path.join(path, dbName + '.db'))
+
+    # check if destination file exists
+    if os.path.isfile(destination):
+        userInput = raw_input('Destination file already exists. Continue (y/n): ')
+        if userInput.lower() == 'n':
+            print('Ending merge.')
+            return
+        elif userInput.lower() != 'y':
+            print 'Cannot process input. Ending merge.'
+            return
+
+    # copy file
+    shutil.copyfile(source, destination)
+
+    # create sql object
+    dbObj = sqlite3.connect(destination)
+    c = dbObj.cursor()
+
+    # loop through each database, attach, and merge
+    for dbFile in dbFiles[1:]:
+
+        # create query
+        sqlQuery = "attach '" + os.path.abspath(os.path.join(path, dbFile)) + """' as toMerge;
+                    INSERT into comments select * from toMerge.comments;
+                    INSERT into submissions select * from toMerge.submissions;
+                    detach toMerge;"""
+
+        # execute and commit
+        c.executescript(sqlQuery)
+        dbObj.commit()
+
+    print 'Merge complete!'
+
+
