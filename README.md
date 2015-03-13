@@ -34,7 +34,7 @@ Let's grab all the posts from the funny subreddit from March 1, 2015:
 
 	funnySubreddit = redditDataset.getSubreddits(redditObject, ['funny'])
     redditDataset.createDataset(redditObject, funnySubreddit, startDate='150301000000'
-								endDate='150301115959', dbName='March_01_2015_funny_posts'
+								endDate='150301235959', dbName='March_01_2015_funny_posts'
 								fineScale=4)
 
 Basically, you give `createDataset` the reddit object, the subreddits (in list or generator form), a start and end date, a base name for the database, and a fine scale (which I'll get to in a moment). 
