@@ -13,8 +13,9 @@ class RedditDB:
     Class for interfacing with a database for reddit data sets
     """
 
-    def __init__(self, dbName='reddit'):
+    def __init__(self, dbName='reddit', dbPath=None):
         self.__dbName = dbName
+        self.__dbPath = dbPath
         self.__c = None  # initialized in initialize database
         self.__initializeDatabase()
 
@@ -22,8 +23,13 @@ class RedditDB:
         """
         :return: full absolute database path
         """
-        userPath = os.path.expanduser('~')
-        basePath = os.path.abspath(os.path.join(userPath, 'Databases'))
+
+        if self.__dbPath is None:
+            userPath = os.path.expanduser('~')
+            basePath = os.path.abspath(os.path.join(userPath, 'Databases'))
+        else:
+            basePath = self.__dbPath
+
         databasePath = os.path.abspath(os.path.join(basePath, self.__dbName + '.db'))
 
         # make directory if it doesn't exist
@@ -38,8 +44,8 @@ class RedditDB:
         """
 
         dbPath = self.__getDatabasePath()
-        dbObj = sqlite3.connect(dbPath)
-        self.__c = dbObj.cursor()
+        self.__dbObj = sqlite3.connect(dbPath)
+        self.__c = self.__dbObj.cursor()
 
         # get list of tables
         tableList = self.__c.execute("Select name from sqlite_master where type = 'table' ")
@@ -100,6 +106,36 @@ class RedditDB:
                                                                                   score, submissionDateStr,
                                                                                   subredditName, subredditID])
         self.__c.connection.commit()
+
+    def getSubreddits(self):
+        """ Extracts a list of distinct subreddits """
+
+        # execute query
+        self.__c.execute('select distinct subredditName from submissions')
+
+        # grab results
+        rawOut = self.__c.fetchall()
+
+        return [item[0] for item in rawOut]
+
+    def getSubredditCommentText(self, subreddit):
+        """ Grabs all comment text and concatenates from a given subreddit """
+
+        # execute query
+        self.__c.execute("select body "
+                         "from comments "
+                         "where postID in "
+                         "  (select postID "
+                         "   from submissions "
+                         "   where subredditName = ?)", [subreddit])
+
+        # get comments
+        rawComments = self.__c.fetchall()
+
+        return [item[0] for item in rawComments]
+
+    def closeConnection(self):
+        self.__dbObj.close()
 
 
 def mergeDBs(path, dbName='mergedDB'):
