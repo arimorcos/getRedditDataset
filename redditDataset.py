@@ -39,7 +39,7 @@ def createDataset(r, subreddits, startDate=(datetime.datetime.now()-datetime.tim
         # get submissions within the date range
         matchingPosts = getAllPostsWithinRangeFineScale(sub, startDate=startDate, endDate=endDate, fineScale=fineScale,
                                                         nPostsPer=nPostsPerFineScale)
-        matchingPosts = r.get_submissions([post.name for post in matchingPosts])
+
         # loop through each post and get top comments
         for post in matchingPosts:
 
