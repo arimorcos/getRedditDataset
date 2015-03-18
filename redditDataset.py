@@ -28,9 +28,6 @@ def createDataset(r, subreddits, startDate=(datetime.datetime.now()-datetime.tim
     # initialize database
     dbObj = RedditDB(dbName=dbName)
 
-    # disable buffering
-    sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', 0)
-
     # loop through each subreddit
     for sub in subreddits:
 
@@ -64,6 +61,7 @@ def createDataset(r, subreddits, startDate=(datetime.datetime.now()-datetime.tim
             [dbObj.saveCommentData(com) for com in comments if isinstance(com, praw.objects.Comment)
              and com.author is not None]
 
+    dbObj.closeConnection()
     print ('\nData collection complete!')
 
 
