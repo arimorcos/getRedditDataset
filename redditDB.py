@@ -111,7 +111,10 @@ class RedditDB:
         """ Extracts a list of distinct subreddits """
 
         # execute query
-        self.__c.execute('select distinct subredditName from submissions')
+        self.__c.execute('select distinct subredditName '
+                         'from submissions '
+                         'group by subredditName '
+                         'order by count(*) desc')
 
         # grab results
         rawOut = self.__c.fetchall()
